@@ -1,0 +1,28 @@
+# Gizli ayarlar - ASLA commit etme
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/
+
+# Çalışma zamanı verileri
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+backups/*
+!backups/.gitkeep
+media_out/
+
+# Editör / OS
+.idea/
+.vscode/
+.DS_Store

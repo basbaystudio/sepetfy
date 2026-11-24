@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sepetfy"
+version = "0.1.0"
+description = "Sepetfy - AI destekli fırsat, içerik ve sosyal medya otomasyon sistemi"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "pydantic>=2.6,<3",
+    "pydantic-settings>=2.2,<3",
+    "apscheduler>=3.10,<4",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.1"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+sepetfy = "sepetfy.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sepetfy*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,40 @@
+# Kullanım:
+#   docker compose up -d --build                       # SQLite ile (varsayılan, ek maliyet yok)
+#   docker compose --profile postgres up -d --build    # PostgreSQL ile (DATABASE_URL'i .env'de değiştirin)
+services:
+  app:
+    build: .
+    container_name: sepetfy
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Konteyner içi yollar .env'deki göreli yolları ezer
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-sqlite:////app/data/sepetfy.db}
+      LOG_DIR: /app/logs
+      BACKUP_DIR: /app/backups
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  db:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sepetfy
+      POSTGRES_USER: sepetfy
+      # Boş bırakılırsa postgres konteyneri başlamaz (bilinçli). .env içinde POSTGRES_PASSWORD tanımlayın.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sepetfy"]
+      interval: 10s
+      retries: 5
+
+volumes:
+  pgdata:
