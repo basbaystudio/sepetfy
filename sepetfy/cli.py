@@ -8,6 +8,8 @@
     python -m sepetfy set-budget 30   # aylık bütçe (USD)
     python -m sepetfy run             # 7/24 zamanlayıcı servisi
     python -m sepetfy feeds           # feed'lerin durumu
+    python -m sepetfy telegram-test   # bot token'ını doğrula, deneme mesajı gönder
+    python -m sepetfy bot             # yalnızca Telegram botunu çalıştır
     python -m sepetfy feed-run AD     # bir feed'i şimdi kontrol et
     python -m sepetfy feed-import AD dosya.xml   # elle indirilen XML'i işle
 """
@@ -159,6 +161,50 @@ def _cmd_feed_import(settings, name: str, path: str) -> int:
     return _print_report(report)
 
 
+def _cmd_bot(settings) -> int:
+    """Yalnızca Telegram botunu ön planda çalıştırır (geliştirme / deneme için)."""
+    import signal
+    import threading
+
+    from sepetfy.approval.bot import BotRunner
+
+    if settings.telegram_bot_token is None:
+        print("TELEGRAM_BOT_TOKEN tanımlı değil (.env)")
+        return 1
+    stop = threading.Event()
+    signal.signal(signal.SIGINT, lambda *_: stop.set())
+    signal.signal(signal.SIGTERM, lambda *_: stop.set())
+    print("Bot çalışıyor. Durdurmak için Ctrl+C")
+    BotRunner(settings).run(stop)
+    return 0
+
+
+def _cmd_telegram_test(settings) -> int:
+    """Token'ı doğrular ve yöneticilere deneme mesajı gönderir."""
+    from sepetfy.integrations.telegram_api import TelegramAPI, TelegramError
+    from sepetfy.notifications.telegram import Notifier
+
+    if settings.telegram_bot_token is None:
+        print("TELEGRAM_BOT_TOKEN tanımlı değil (.env)")
+        return 1
+    api = TelegramAPI(settings.telegram_bot_token.get_secret_value())
+    try:
+        me = api.get_me()
+    except TelegramError as exc:
+        print(f"Token doğrulanamadı: {exc}")
+        return 1
+    print(f"Token geçerli: @{me.get('username')}")
+    if not settings.admin_user_ids:
+        print("TELEGRAM_ADMIN_USER_IDS boş. Bota /start yazın; bot size kimliğinizi söyleyecek "
+              "(önce 'python -m sepetfy bot' çalışıyor olmalı).")
+        return 1
+    sent = Notifier(settings, api).send("✅ Sepetfy bağlantı testi başarılı. Komutlar için /yardim")
+    print(f"Deneme mesajı gönderildi: {len(sent)}/{len(settings.admin_user_ids)} yönetici")
+    if not sent:
+        print("Mesaj gitmediyse: Telegram'da botunuzu açıp bir kez /start yazın, sonra tekrar deneyin.")
+    return 0 if sent else 1
+
+
 def _cmd_run(settings) -> int:
     from sepetfy.scheduler.runner import run
 
@@ -179,6 +225,8 @@ def main(argv: list[str] | None = None) -> int:
     sb.add_argument("usd", type=float)
     sub.add_parser("run")
     sub.add_parser("feeds")
+    sub.add_parser("bot")
+    sub.add_parser("telegram-test")
     fr = sub.add_parser("feed-run")
     fr.add_argument("name")
     fi = sub.add_parser("feed-import")
@@ -203,6 +251,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_set_budget(settings, args.usd)
     if args.cmd == "run":
         return _cmd_run(settings)
+    if args.cmd == "bot":
+        return _cmd_bot(settings)
+    if args.cmd == "telegram-test":
+        return _cmd_telegram_test(settings)
     if args.cmd == "feeds":
         return _cmd_feeds(settings)
     if args.cmd == "feed-run":

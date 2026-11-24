@@ -3,7 +3,7 @@
 ``publish`` metodu ``final`` niteliğindedir: alt sınıflar yalnızca ``_send`` metodunu
 uygular. Akış:
 
-1. Global şalter (``PUBLISHING_ENABLED``) kontrolü.
+1. Global şalter (``PUBLISHING_ENABLED``) ve acil durdurma (``/durdur``) kontrolü.
 2. Onay kapısı (``authorize_publication``).
 3. ``Publication`` satırı ``publishing`` durumunda yazılır ve COMMIT edilir.
    UNIQUE(content_id, platform) sayesinde paralel/tekrarlı çağrılardan yalnızca biri geçer.
@@ -22,6 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from sepetfy.app.errors import DuplicatePublication, PublishNotAllowed
+from sepetfy.app.runtime import is_halted
 from sepetfy.approval.guard import authorize_publication
 from sepetfy.config import Settings
 from sepetfy.database.models import (
@@ -51,6 +52,8 @@ class BasePublisher(ABC):
     def publish(self, session: Session, content_id: int) -> Publication:
         if not self.settings.publishing_enabled:
             raise PublishNotAllowed("Yayın şalteri kapalı (PUBLISHING_ENABLED=false)")
+        if is_halted(session):
+            raise PublishNotAllowed("Acil durdurma aktif (/durdur)")
 
         approval = authorize_publication(session, content_id, self.platform, self.settings.admin_user_ids)
         content = session.get(ContentItem, content_id)

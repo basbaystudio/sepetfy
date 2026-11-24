@@ -11,6 +11,7 @@ Yayın izni için şartların HEPSİ sağlanmalı:
 4. İçerik, onaydan sonra değişmemiş olmalı (``content_hash`` eşleşmeli).
 5. İçerik durumu ``approved`` veya ``scheduled`` olmalı.
 6. Bu içerik bu platformda daha önce yayınlanmamış / yayınlanıyor olmamalı.
+7. Demo (deneme) içerik olmamalı.
 """
 
 from __future__ import annotations
@@ -25,6 +26,9 @@ from sepetfy.app.errors import DuplicatePublication, PublishNotAllowed
 from sepetfy.database.models import (
     ApprovalDecision, ApprovalRecord, ContentItem, ContentStatus, Platform, Publication,
 )
+
+
+DEMO_PREFIX = "demo-"
 
 
 def compute_content_hash(body: str, media_paths: list | None, platform: str) -> str:
@@ -57,6 +61,9 @@ def authorize_publication(
     content = session.get(ContentItem, content_id)
     if content is None:
         raise PublishNotAllowed(f"İçerik bulunamadı: {content_id}")
+
+    if content.deal is not None and content.deal.product.external_id.startswith(DEMO_PREFIX):
+        raise PublishNotAllowed("Demo içerik yayınlanamaz")
 
     approval = latest_approval(session, content_id)
     if approval is None:

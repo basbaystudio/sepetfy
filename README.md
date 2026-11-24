@@ -12,7 +12,7 @@ n8n kullanılmaz; tüm otomasyon Python ile kodlanmıştır.
 | 2 | Fırsat takibi: genel XML feed toplayıcı ✅, fiyat geçmişi ✅, indirim doğrulama ✅; gerçek feed bağlantısı ⏳ (affiliate onayı bekleniyor), manuel link girişi ⏳ | 🔄 Devam ediyor |
 | 3 | Claude analizi, puanlama, içerik üretimi | — |
 | 4 | Gemini görsel, Kling video, AI influencer | — |
-| 5 | Telegram onay botu | — |
+| 5 | Telegram yönetim botu: onay kartları, komutlar, acil durdurma, uyarılar, manuel ürün, XML yükleme | ✅ Kodlandı ve test edildi · ⏳ sizin bot token'ınızla canlı test |
 | 6 | Yayın: Telegram → Instagram → TikTok → Pinterest → diğerleri | — |
 | 7 | Performans, maliyet raporları, optimizasyon | — |
 
@@ -33,6 +33,7 @@ Docker / VPS: [docs/SETUP.md](docs/SETUP.md)
 - [Mimari ve modüller](docs/ARCHITECTURE.md)
 - [Kaynak ve platform erişim değerlendirmesi](docs/SOURCES_AND_PLATFORMS.md)
 - [Ürün feed'leri: çalışma şekli ve yeni feed ekleme](docs/FEEDS.md)
+- [Telegram yönetim botu: kurulum ve kullanım](docs/TELEGRAM.md)
 - [Tahmini maliyet](docs/COSTS.md)
 - [Kurulum](docs/SETUP.md)
 - [Faz raporları](docs/PHASE_REPORTS.md)

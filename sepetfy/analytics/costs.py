@@ -16,7 +16,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from sepetfy.app.errors import BudgetExceeded
+from sepetfy.app.errors import BudgetExceeded, SystemHalted
 from sepetfy.config import Settings
 from sepetfy.database.models import AppSetting, CostEntry
 
@@ -80,14 +80,20 @@ def budget_status(session: Session, settings: Settings, extra_usd: float = 0.0) 
 
 
 def ensure_budget(session: Session, settings: Settings, estimated_usd: float) -> BudgetStatus:
+    """Her ücretli çağrıdan ÖNCE çağrılır."""
+    from sepetfy.app.runtime import is_halted
+    from sepetfy.notifications.telegram import alert
+
+    if is_halted(session):
+        raise SystemHalted("Acil durdurma aktif: ücretli çağrı yapılmadı (/baslat ile açılır)")
     st = budget_status(session, settings, extra_usd=estimated_usd)
     if st.exceeded and settings.budget_hard_stop:
-        raise BudgetExceeded(
-            f"Aylık bütçe aşılacak: {st.spent_usd:.2f}$ / {st.budget_usd:.2f}$ — ücretli çağrı engellendi"
-        )
+        msg = f"Aylık bütçe aşılacak: {st.spent_usd:.2f}$ / {st.budget_usd:.2f}$ — ücretli çağrı engellendi"
+        alert("budget_exceeded", msg + "\nYükseltmek için: /butce <USD>", cooldown_hours=12)
+        raise BudgetExceeded(msg)
     if st.warn:
-        log.warning("Bütçe uyarısı: %.0f%% kullanıldı (%.2f$ / %.2f$)",
-                    st.ratio * 100, st.spent_usd, st.budget_usd)
+        alert("budget_warn", f"Aylık bütçenin %{st.ratio * 100:.0f}'i kullanıldı "
+                             f"({st.spent_usd:.2f}$ / {st.budget_usd:.2f}$)", cooldown_hours=24)
     return st
 
 

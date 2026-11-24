@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: SecretStr | None = None
     telegram_admin_user_ids: str = ""
+    # Bir seferde onaya sunulacak en fazla fırsat (bildirim yağmurunu önler)
+    telegram_max_previews: int = Field(default=5, ge=1, le=50)
 
     # AI servisleri
     anthropic_api_key: SecretStr | None = None

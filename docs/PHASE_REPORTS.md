@@ -82,3 +82,47 @@
 
 ### Maliyet
 - **$0.** Feed takibinde AI kullanılmıyor.
+
+## FAZ 5 — Telegram Yönetim Botu (2026-11-25) ✅ kodlandı · ⏳ canlı test
+
+FAZ 3–4'ten önce yapıldı: ücretsiz, başvuru gerektirmiyor ve onay mekanizması her şeyin ön koşulu.
+
+### Yapılanlar
+- **Telegram Bot API istemcisi** (`httpx`, yeni bağımlılık yok); token hiçbir hata mesajına/loga sızmaz.
+- **Onay kartı:** görsel, fiyatlar, doğrulanmış indirim, şüpheli eski fiyat uyarısı, bağlantı, içerikler;
+  platform seçimi + ONAYLA / REDDET / DÜZENLE / SONRA. Kararlar onay kapısından (append-only) kaydedilir.
+- **Telegram gönderi şablonu (AI'sız):** yalnızca doğrulanmış indirim yazılır; affiliate açıklaması ve
+  "fiyat değişebilir" uyarısı her gönderide var; HTML güvenli.
+- **Komutlar:** /durum /bekleyenler /firsatlar /maliyet /butce /feeds /durdur /baslat /demo /iptal /yardim
+- **Acil durdurma:** /durdur → yayın kapısı ve ücretli AI çağrıları (bütçe koruması) anında kilitlenir.
+- **Manuel ürün girişi:** link → ad → fiyat → eski fiyat (veya tek mesaj); aynı link tekrarlandıkça fiyat geçmişi.
+- **XML yükleme:** dosyayı bota gönder → feed hattından geçer → fırsat kartları.
+- **Uyarılar** (tekrar sınırlı): bütçe %80 / sınır, feed hatası, bayat feed, devre kesici.
+- **SONRA hatırlatması** (3 saat); toplu önizleme sınırı (`TELEGRAM_MAX_PREVIEWS`, varsayılan 5).
+- **Güvenilirlik:** güncellemeler en fazla bir kez işlenir; Telegram'a ulaşılamazsa artan aralıklarla
+  yeniden dener ve sistem çalışmaya devam eder; geçersiz token (401) ve çift çalışma (409) açıkça loglanır.
+- **Kurulum modu:** yönetici tanımlı değilken bot yalnızca kullanıcıya kendi kimliğini söyler.
+- CLI: `telegram-test`, `bot`. Docker'da bot, zamanlayıcıyla aynı serviste başlar.
+
+### Testler
+- 31 bot testi: yabancı kullanıcı ve grup sohbeti yok sayılır, yetkisiz buton, tüm onay akışları,
+  çift basma, demo içeriğin yayınlanamaması, acil durdurmanın bütçe ve yayın kapısını kilitlemesi,
+  manuel ürün konuşması, XML yükleme, uyarı tekrar sınırı, token sızıntısı, Telegram'ın 64 bayt buton sınırı
+  ve Telegram'ı taklit eden sunucuya karşı **gerçek HTTP istemcisi + uzun sorgulama döngüsüyle uçtan uca** /demo → ONAYLA.
+- Tüm paket: SQLite 126 (+5 yalnız PG), **PostgreSQL 16'da 131/131**.
+- Docker: token yokken ve Telegram'a ulaşılamazken servis sağlıklı kaldı; token loglarda yok.
+
+### Geliştirme sırasında bulunup düzeltilen hatalar
+1. Önizleme kodu modelde olmayan bir alana (`Deal.snapshot`) erişiyordu; çalışınca çökerdi → düzeltildi.
+2. Offset testi kendi kendini doğruluyordu (hiçbir şey kanıtlamıyordu) → gerçek güncelleme kimliğiyle yeniden yazıldı.
+3. Devre kesici uyarı dinleyicisi her açılışta yeniden eklenebiliyordu → modül seviyesine taşındı.
+
+### Eksikler / dürüst notlar
+- **Gerçek Telegram ile canlı test yapılamadı:** bu geliştirme ortamının ağ kuralları api.telegram.org'a
+  izin vermiyor (bot token'ı da buraya girmemeli). İlk canlı test sizin kurulumunuzda `telegram-test` ile.
+- Onaylanan içerik henüz **yayınlanmıyor** (yayıncılar FAZ 6).
+- DÜZENLE notu kaydediliyor ama notla otomatik yeniden yazım Claude ile (FAZ 3) gelecek.
+- Fırsat puanı (A/B/C) henüz yok; kartlar doğrulanmış indirim oranına göre sıralanıyor (FAZ 3).
+
+### Maliyet
+- **$0.** Telegram Bot API ücretsiz; AI kullanılmıyor.

@@ -52,6 +52,15 @@ class CircuitBreaker:
             if self._failures >= self.failure_threshold and self._opened_at is None:
                 self._opened_at = self._clock()
                 log.error("Devre kesici AÇILDI: %s (%d ardışık hata)", self.service, self._failures)
+                opened = True
+            else:
+                opened = False
+        if opened:
+            for listener in list(_open_listeners):
+                try:
+                    listener(self.service, self.cooldown_sec)
+                except Exception:
+                    log.exception("Devre kesici dinleyicisi hata verdi")
 
     def call(self, fn: Callable[[], T], *, retries: int = 2, backoff_sec: float = 1.0,
              sleep: Callable[[float], None] = time.sleep) -> T:
@@ -75,6 +84,13 @@ class CircuitBreaker:
 
 
 _breakers: dict[str, CircuitBreaker] = {}
+_open_listeners: list[Callable[[str, float], None]] = []
+
+
+def add_open_listener(fn: Callable[[str, float], None]) -> None:
+    """Devre kesici açıldığında çağrılır (ör. Telegram uyarısı)."""
+    if fn not in _open_listeners:
+        _open_listeners.append(fn)
 
 
 def breaker_for(service: str) -> CircuitBreaker:

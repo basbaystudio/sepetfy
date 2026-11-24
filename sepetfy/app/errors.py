@@ -25,6 +25,10 @@ class ServiceUnavailable(ExternalServiceError):
         super().__init__(service, message, retryable=False)
 
 
+class SystemHalted(SepetfyError):
+    """Acil durdurma (/durdur) aktif: yayın ve ücretli çağrı yapılamaz."""
+
+
 class BudgetExceeded(SepetfyError):
     """Aylık bütçe limiti aşılacak; ücretli çağrı engellendi."""
 

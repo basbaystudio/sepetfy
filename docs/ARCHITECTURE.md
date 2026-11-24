@@ -38,6 +38,8 @@
    - Veritabanı: `publications.approval_id NOT NULL`, `UNIQUE(content_id, platform)`,
      `approval_records` tablosunda UPDATE/DELETE tetikleyiciyle engelli.
    - Şalterler: `PUBLISHING_ENABLED=false`, `DRY_RUN=true` varsayılandır.
+   - Acil durdurma: Telegram'dan `/durdur` → yayın ve ücretli AI çağrıları anında durur.
+   - Demo içerik hiçbir koşulda yayınlanamaz.
 2. **Önce kural, sonra AI** — Ucuz kural tabanlı ön eleme (fiyat geçmişi, indirim oranı, stok)
    geçen ürünler AI'a gider. Aynı ürün+fiyat+kupon için `deals.fingerprint` ve `ai_cache`
    tekrar analizi engeller.
@@ -67,19 +69,20 @@
 | `sepetfy/app` | Önyükleme, loglama (gizli değer maskeleme), hata sınıfları, devre kesici | 1 ✅ |
 | `sepetfy/config` | `.env` ayarları, kaynak kataloğu ve erişim değerlendirmesi | 1 ✅ |
 | `sepetfy/database` | Şema, Alembic göçleri (açılışta otomatik), oturum, yedekleme, başlangıç verisi | 1 ✅ / 2 ✅ |
-| `sepetfy/approval` | Onay kapısı ve karar kayıtları (Telegram arayüzü FAZ 5) | 1 ✅ çekirdek |
+| `sepetfy/approval` | Onay kapısı, karar kayıtları, onay kartı (`preview.py`), Telegram yönetim botu (`bot.py`) — bkz. [TELEGRAM.md](TELEGRAM.md) | 1 ✅ / 5 ✅ |
 | `sepetfy/publishers` | `BasePublisher` (zorunlu onay akışı); platform yayıncıları | 1 ✅ çekirdek / 6 |
 | `sepetfy/analytics` | Maliyet defteri + bütçe (1 ✅); performans & rapor (7) | 1 / 7 |
 | `sepetfy/scheduler` | 7/24 servis: heartbeat, günlük yedek, feed kontrolleri, bayat feed uyarısı | 1 ✅ / 2 ✅ |
+| `sepetfy/collectors/manual.py` | Telegram'dan manuel ürün gözlemi (link + fiyat) | 5 ✅ |
 | `sepetfy/collectors/feed` | Genel XML feed toplayıcı (koşullu indirme, akış ayrıştırma, sağlamlık kontrolü, partili eşitleme) — bkz. [FEEDS.md](FEEDS.md) | 2 ✅ |
 | `sepetfy/price_tracker` | Son 30 günün en düşüğü kuralı, indirim doğrulama, şüpheli eski fiyat tespiti | 2 ✅ |
 | `sepetfy/deal_scoring` | 100 puanlık puanlama, A/B/C sınıfı, gerekçeler | 3 |
 | `sepetfy/ai` | Claude istemcisi (önbellek + bütçe korumalı) | 3 |
-| `sepetfy/content` | Platform şablonları | 3–4 |
+| `sepetfy/content` | Platform şablonları: Telegram gönderisi (AI'sız) ✅; diğerleri FAZ 3–4 | 5 ✅ / 3–4 |
 | `sepetfy/influencer` | Sanal karakter tanımı ve tutarlılık kuralları | 4 |
 | `sepetfy/media` | Gemini görsel, Kling video, dosya depolama | 4 |
-| `sepetfy/integrations` | Google Drive / Sheets, affiliate ağları | 4+ |
-| `sepetfy/notifications` | Telegram bildirimleri (fırsat, bütçe, hata) | 5 |
+| `sepetfy/integrations` | Telegram Bot API istemcisi ✅; Google Drive / Sheets, affiliate ağları (4+) | 5 ✅ / 4+ |
+| `sepetfy/notifications` | Yöneticiye Telegram bildirimi ve tekrar sınırlı uyarılar (bütçe, feed, devre kesici) | 5 ✅ |
 
 ## Veri modeli (özet)
 

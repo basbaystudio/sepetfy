@@ -33,6 +33,8 @@ cp .env.example .env && chmod 600 .env      # değerleri düzenleyin
 | `python -m sepetfy costs` | Günlük/aylık maliyet özeti |
 | `python -m sepetfy set-budget 30` | Aylık bütçe limiti (USD) |
 | `python -m sepetfy run` | Zamanlayıcı servisi |
+| `python -m sepetfy telegram-test` | Bot token'ını doğrular, yöneticilere deneme mesajı gönderir |
+| `python -m sepetfy bot` | Yalnızca Telegram botunu çalıştırır (deneme) |
 | `python -m sepetfy feeds` | Ürün feed'lerinin durumu |
 | `python -m sepetfy feed-run AD` | Bir feed'i şimdi kontrol et |
 | `python -m sepetfy feed-import AD DOSYA` | Elle indirilmiş XML'i işle |
