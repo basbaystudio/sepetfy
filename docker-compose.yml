@@ -11,6 +11,7 @@ services:
       # Konteyner içi yollar .env'deki göreli yolları ezer
       DATABASE_URL: ${DOCKER_DATABASE_URL:-sqlite:////app/data/sepetfy.db}
       LOG_DIR: /app/logs
+      DATA_DIR: /app/data
       BACKUP_DIR: /app/backups
     volumes:
       - ./data:/app/data

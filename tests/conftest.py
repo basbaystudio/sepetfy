@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import create_engine, text
 
 from sepetfy.config import Settings
 from sepetfy.database import create_schema, init_engine, session_scope
@@ -17,9 +19,16 @@ ADMIN_ID = 111222333
 def settings(tmp_path, monkeypatch):
     # Gerçek .env dosyasının testleri etkilememesi için
     monkeypatch.chdir(tmp_path)
+    # Tüm paketi PostgreSQL'de koşturmak için: SEPETFY_TEST_DB_URL=postgresql+psycopg://...
+    db_url = os.environ.get("SEPETFY_TEST_DB_URL") or f"sqlite:///{tmp_path / 'test.db'}"
+    if db_url.startswith("postgresql"):
+        eng = create_engine(db_url)
+        with eng.begin() as c:
+            c.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public"))
+        eng.dispose()
     s = Settings(
         _env_file=None,
-        database_url=f"sqlite:///{tmp_path / 'test.db'}",
+        database_url=db_url,
         log_dir=tmp_path / "logs",
         backup_dir=tmp_path / "backups",
         telegram_admin_user_ids=str(ADMIN_ID),
@@ -52,3 +61,11 @@ def content_id(settings):
         s.add(c)
         s.flush()
         return c.id
+
+
+@pytest.fixture(autouse=True)
+def _reset_circuit_breakers():
+    from sepetfy.app import resilience
+    resilience._breakers.clear()
+    yield
+    resilience._breakers.clear()

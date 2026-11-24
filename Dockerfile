@@ -24,6 +24,7 @@ USER sepetfy
 # Ayarlar çalışma anında env_file ile verilir; imaja gizli bilgi gömülmez.
 ENV DATABASE_URL=sqlite:////app/data/sepetfy.db \
     LOG_DIR=/app/logs \
+    DATA_DIR=/app/data \
     BACKUP_DIR=/app/backups
 
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \

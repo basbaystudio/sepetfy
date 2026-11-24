@@ -66,13 +66,13 @@
 |---|---|---|
 | `sepetfy/app` | Önyükleme, loglama (gizli değer maskeleme), hata sınıfları, devre kesici | 1 ✅ |
 | `sepetfy/config` | `.env` ayarları, kaynak kataloğu ve erişim değerlendirmesi | 1 ✅ |
-| `sepetfy/database` | Şema, oturum, yedekleme/geri yükleme, başlangıç verisi | 1 ✅ |
+| `sepetfy/database` | Şema, Alembic göçleri (açılışta otomatik), oturum, yedekleme, başlangıç verisi | 1 ✅ / 2 ✅ |
 | `sepetfy/approval` | Onay kapısı ve karar kayıtları (Telegram arayüzü FAZ 5) | 1 ✅ çekirdek |
 | `sepetfy/publishers` | `BasePublisher` (zorunlu onay akışı); platform yayıncıları | 1 ✅ çekirdek / 6 |
 | `sepetfy/analytics` | Maliyet defteri + bütçe (1 ✅); performans & rapor (7) | 1 / 7 |
-| `sepetfy/scheduler` | 7/24 servis: heartbeat, günlük yedek; kaynak kontrolleri | 1 ✅ / 2 |
-| `sepetfy/collectors` | Kaynak başına toplayıcılar | 2 |
-| `sepetfy/price_tracker` | Fiyat geçmişi, referans fiyat, sahte indirim tespiti | 2 |
+| `sepetfy/scheduler` | 7/24 servis: heartbeat, günlük yedek, feed kontrolleri, bayat feed uyarısı | 1 ✅ / 2 ✅ |
+| `sepetfy/collectors/feed` | Genel XML feed toplayıcı (koşullu indirme, akış ayrıştırma, sağlamlık kontrolü, partili eşitleme) — bkz. [FEEDS.md](FEEDS.md) | 2 ✅ |
+| `sepetfy/price_tracker` | Son 30 günün en düşüğü kuralı, indirim doğrulama, şüpheli eski fiyat tespiti | 2 ✅ |
 | `sepetfy/deal_scoring` | 100 puanlık puanlama, A/B/C sınıfı, gerekçeler | 3 |
 | `sepetfy/ai` | Claude istemcisi (önbellek + bütçe korumalı) | 3 |
 | `sepetfy/content` | Platform şablonları | 3–4 |
@@ -83,8 +83,11 @@
 
 ## Veri modeli (özet)
 
-`stores` → `products` → `price_snapshots` (fiyat geçmişi)
+`stores` → `products` → `price_snapshots` (fiyat geçmişi); `feed_states` (feed başına son durum)
 `deals` (puan, sınıf, gerekçe, parmak izi) → `content_items` (platform, sürüm, özet)
 → `approval_records` (append-only) → `publications` (UNIQUE içerik+platform)
 → `performance_metrics`
 Yan tablolar: `cost_entries`, `ai_cache`, `app_settings`.
+
+Şema değişiklikleri `sepetfy/database/migrations/versions/` altında Alembic göçleridir ve
+uygulama açılışında otomatik uygulanır; mevcut veriler korunur. Göçler SQLite ve PostgreSQL'de test edilir.

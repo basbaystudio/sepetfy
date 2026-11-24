@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Örnek Mağaza</title>
+    <item>
+      <g:id>HB-001</g:id>
+      <g:title>Kablosuz Kulaklık X100</g:title>
+      <g:link>https://example.com/p/hb-001?aff=123</g:link>
+      <g:image_link>https://example.com/img/hb-001.jpg</g:image_link>
+      <g:price>1.499,90 TRY</g:price>
+      <g:sale_price>1.199,90 TRY</g:sale_price>
+      <g:availability>in stock</g:availability>
+      <g:brand>Sesli</g:brand>
+      <g:product_type>Elektronik &gt; Kulaklık</g:product_type>
+      <g:shipping><g:country>TR</g:country><g:price>0 TRY</g:price></g:shipping>
+    </item>
+    <item>
+      <g:id>HB-002</g:id>
+      <g:title>Termos 500 ml</g:title>
+      <g:link>https://example.com/p/hb-002</g:link>
+      <g:price>349.00 TRY</g:price>
+      <g:availability>out of stock</g:availability>
+    </item>
+    <item>
+      <g:id>HB-003</g:id>
+      <g:title>Fiyatı olmayan ürün</g:title>
+      <g:link>https://example.com/p/hb-003</g:link>
+    </item>
+    <item>
+      <g:id>HB-001</g:id>
+      <g:title>Tekrarlanan kayıt</g:title>
+      <g:link>https://example.com/p/hb-001</g:link>
+      <g:price>1 TRY</g:price>
+    </item>
+  </channel>
+</rss>

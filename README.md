@@ -9,7 +9,7 @@ n8n kullanılmaz; tüm otomasyon Python ile kodlanmıştır.
 | Faz | Kapsam | Durum |
 |---|---|---|
 | 1 | Altyapı: veritabanı, ayarlar, loglama, hata yönetimi, onay kapısı çekirdeği, bütçe koruması, yedekleme, Docker | ✅ Tamamlandı, test edildi |
-| 2 | Fırsat takibi: kaynaklar, fiyat geçmişi, indirim doğrulama | ⏳ Sırada |
+| 2 | Fırsat takibi: genel XML feed toplayıcı ✅, fiyat geçmişi ✅, indirim doğrulama ✅; gerçek feed bağlantısı ⏳ (affiliate onayı bekleniyor), manuel link girişi ⏳ | 🔄 Devam ediyor |
 | 3 | Claude analizi, puanlama, içerik üretimi | — |
 | 4 | Gemini görsel, Kling video, AI influencer | — |
 | 5 | Telegram onay botu | — |
@@ -32,6 +32,7 @@ Docker / VPS: [docs/SETUP.md](docs/SETUP.md)
 
 - [Mimari ve modüller](docs/ARCHITECTURE.md)
 - [Kaynak ve platform erişim değerlendirmesi](docs/SOURCES_AND_PLATFORMS.md)
+- [Ürün feed'leri: çalışma şekli ve yeni feed ekleme](docs/FEEDS.md)
 - [Tahmini maliyet](docs/COSTS.md)
 - [Kurulum](docs/SETUP.md)
 - [Faz raporları](docs/PHASE_REPORTS.md)

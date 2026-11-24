@@ -25,6 +25,13 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def as_utc(dt: datetime | None) -> datetime | None:
+    """SQLite saat dilimi bilgisini saklamaz; okunan naive değerleri UTC kabul et."""
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -119,13 +126,16 @@ class Product(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(512))
     brand: Mapped[str | None] = mapped_column(String(128))
     category: Mapped[str | None] = mapped_column(String(128), index=True)
-    url: Mapped[str] = mapped_column(String(1024))
-    affiliate_url: Mapped[str | None] = mapped_column(String(1024))
-    image_url: Mapped[str | None] = mapped_column(String(1024))
+    url: Mapped[str] = mapped_column(String(2048))
+    affiliate_url: Mapped[str | None] = mapped_column(String(2048))
+    image_url: Mapped[str | None] = mapped_column(String(2048))
     seller_name: Mapped[str | None] = mapped_column(String(256))
     seller_rating: Mapped[float | None]
     rating: Mapped[float | None]
     review_count: Mapped[int | None]
+    # Feed'den kaybolan ürün hemen "stokta yok" sayılmaz; art arda N kontrolde yoksa pasife alınır.
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    missing_count: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -152,6 +162,24 @@ class PriceSnapshot(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     product: Mapped[Product] = relationship(back_populates="snapshots")
+
+
+class FeedState(Base):
+    """Bir ürün feed'inin son durumu: değişiklik tespiti ve izleme için."""
+
+    __tablename__ = "feed_states"
+
+    name: Mapped[str] = mapped_column(String(64), primary_key=True)
+    store_id: Mapped[int] = mapped_column(ForeignKey("stores.id"))
+    etag: Mapped[str | None] = mapped_column(String(256))
+    last_modified: Mapped[str | None] = mapped_column(String(64))
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_item_count: Mapped[int | None]
+    last_stats: Mapped[dict | None] = mapped_column(JSON)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
 
 
 # ---------------------------------------------------------------- fırsat

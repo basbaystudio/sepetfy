@@ -7,6 +7,9 @@
     python -m sepetfy costs           # maliyet özeti
     python -m sepetfy set-budget 30   # aylık bütçe (USD)
     python -m sepetfy run             # 7/24 zamanlayıcı servisi
+    python -m sepetfy feeds           # feed'lerin durumu
+    python -m sepetfy feed-run AD     # bir feed'i şimdi kontrol et
+    python -m sepetfy feed-import AD dosya.xml   # elle indirilen XML'i işle
 """
 
 from __future__ import annotations
@@ -102,6 +105,60 @@ def _cmd_set_budget(settings, value: float) -> int:
     return 0
 
 
+def _print_report(report) -> int:
+    print(f"Feed {report.feed}: {report.status}" + (f" — {report.message}" if report.message else ""))
+    if report.stats:
+        print(json.dumps(report.stats, indent=2, ensure_ascii=False))
+    if report.deal_ids:
+        print(f"Yeni fırsat adayları (deal id): {report.deal_ids}")
+    return 0 if report.status not in ("failed", "rejected") else 1
+
+
+def _cmd_feeds(settings) -> int:
+    from sepetfy.collectors.feed import load_feed_configs
+    from sepetfy.database import session_scope
+    from sepetfy.database.models import FeedState
+
+    configs = load_feed_configs()
+    if not configs:
+        print("Tanımlı feed yok (sepetfy/config/feeds/*.json)")
+        return 0
+    with session_scope() as s:
+        for cfg in configs.values():
+            st = s.get(FeedState, cfg.name)
+            url = "URL var" if cfg.resolve_url() else f"URL YOK ({cfg.url_env})"
+            flag = "AÇIK " if cfg.enabled else "kapalı"
+            last = st.last_success_at.strftime("%Y-%m-%d %H:%M") if st and st.last_success_at else "-"
+            count = st.last_item_count if st and st.last_item_count is not None else "-"
+            print(f"[{flag}] {cfg.name:16s} her {cfg.interval_min:>3} dk  {url:28s} "
+                  f"son başarı: {last}  ürün: {count}")
+            if st and st.last_error:
+                print(f"         son hata: {st.last_error}")
+    return 0
+
+
+def _cmd_feed_run(settings, name: str) -> int:
+    from sepetfy.collectors.feed import load_feed_configs, run_feed
+    from sepetfy.database import session_scope
+
+    cfg = load_feed_configs()[name]
+    with session_scope() as s:
+        report = run_feed(s, cfg, settings.data_dir)
+    return _print_report(report)
+
+
+def _cmd_feed_import(settings, name: str, path: str) -> int:
+    from pathlib import Path
+
+    from sepetfy.collectors.feed import import_feed_file, load_feed_configs
+    from sepetfy.database import session_scope
+
+    cfg = load_feed_configs()[name]
+    with session_scope() as s:
+        report = import_feed_file(s, cfg, Path(path))
+    return _print_report(report)
+
+
 def _cmd_run(settings) -> int:
     from sepetfy.scheduler.runner import run
 
@@ -121,9 +178,17 @@ def main(argv: list[str] | None = None) -> int:
     sb = sub.add_parser("set-budget")
     sb.add_argument("usd", type=float)
     sub.add_parser("run")
+    sub.add_parser("feeds")
+    fr = sub.add_parser("feed-run")
+    fr.add_argument("name")
+    fi = sub.add_parser("feed-import")
+    fi.add_argument("name")
+    fi.add_argument("path")
     args = parser.parse_args(argv)
 
-    settings = bootstrap()
+    # Sağlık kontrolü her dakika çalışır: göç çalıştırma, sadece bağlantıyı ve heartbeat'i kontrol et
+    healthcheck = args.cmd == "check" and args.healthcheck
+    settings = bootstrap(create_tables=not healthcheck)
     if args.cmd == "init-db":
         return _cmd_init_db(settings)
     if args.cmd == "check":
@@ -138,6 +203,12 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_set_budget(settings, args.usd)
     if args.cmd == "run":
         return _cmd_run(settings)
+    if args.cmd == "feeds":
+        return _cmd_feeds(settings)
+    if args.cmd == "feed-run":
+        return _cmd_feed_run(settings, args.name)
+    if args.cmd == "feed-import":
+        return _cmd_feed_import(settings, args.name, args.path)
     return 2
 
 

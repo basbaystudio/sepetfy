@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     timezone: str = "Europe/Istanbul"
     log_dir: Path = PROJECT_ROOT / "logs"
+    data_dir: Path = PROJECT_ROOT / "data"
 
     # Veritabanı
     database_url: str = f"sqlite:///{PROJECT_ROOT / 'data' / 'sepetfy.db'}"
@@ -82,7 +83,7 @@ class Settings(BaseSettings):
             return prefix + str(PROJECT_ROOT / v[len(prefix):])
         return v
 
-    @field_validator("log_dir", "backup_dir")
+    @field_validator("log_dir", "backup_dir", "data_dir")
     @classmethod
     def _resolve_dir(cls, v: Path) -> Path:
         return v if v.is_absolute() else PROJECT_ROOT / v

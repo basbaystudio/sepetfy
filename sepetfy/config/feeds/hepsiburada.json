@@ -1,0 +1,24 @@
+{
+  "_aciklama": "TASLAK: Gerçek feed gelince alan adları ona göre düzeltilecek. Şimdilik affiliate ağlarında yaygın olan Google Shopping (RSS) biçimi varsayıldı. URL buraya YAZILMAZ; .env içine HEPSIBURADA_FEED_URL olarak eklenir.",
+  "name": "hepsiburada",
+  "store_code": "hepsiburada",
+  "enabled": false,
+  "url_env": "HEPSIBURADA_FEED_URL",
+  "interval_min": 60,
+  "item_tag": "item",
+  "decimal": "auto",
+  "currency": "TRY",
+  "fields": {
+    "external_id": "g:id",
+    "title": "g:title",
+    "url": "g:link",
+    "affiliate_url": "g:link",
+    "image_url": "g:image_link",
+    "price": ["g:sale_price", "g:price"],
+    "list_price": "g:price",
+    "in_stock": "g:availability",
+    "brand": "g:brand",
+    "category": ["g:product_type", "g:google_product_category"],
+    "shipping_cost": "g:shipping/g:price"
+  }
+}

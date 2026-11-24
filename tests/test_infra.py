@@ -114,10 +114,14 @@ def test_backup_and_rotation(settings):
         seed_stores(s)
     out = backup_database(settings.database_url, settings.backup_dir, keep=2)
     raw = gzip.decompress(out.read_bytes())
-    restored = settings.backup_dir / "restored.db"
-    restored.write_bytes(raw)
-    n = sqlite3.connect(restored).execute("SELECT count(*) FROM stores").fetchone()[0]
-    assert n > 0
+    if settings.database_url.startswith("postgresql"):
+        dump = raw.decode()
+        assert "CREATE TABLE public.stores" in dump and "Trendyol" in dump
+    else:
+        restored = settings.backup_dir / "restored.db"
+        restored.write_bytes(raw)
+        n = sqlite3.connect(restored).execute("SELECT count(*) FROM stores").fetchone()[0]
+        assert n > 0
 
     for i in range(3):
         (settings.backup_dir / f"sepetfy-2000010{i}T000000Z.db.gz").write_bytes(b"x")

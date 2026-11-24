@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine, event, text
+from alembic.runtime.migration import MigrationContext
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from sepetfy.database.models import Base
+log = logging.getLogger(__name__)
+
 
 _engine: Engine | None = None
 _SessionLocal: sessionmaker[Session] | None = None
@@ -24,11 +27,18 @@ def make_engine(url: str) -> Engine:
 
         @event.listens_for(engine, "connect")
         def _sqlite_pragmas(dbapi_conn, _):
+            # pysqlite'ın kendi işlem yönetimini kapat: aksi hâlde DDL (CREATE/ALTER) işleme
+            # dahil olmaz ve SAVEPOINT doğru çalışmaz. İşlemleri aşağıda biz başlatıyoruz.
+            dbapi_conn.isolation_level = None
             cur = dbapi_conn.cursor()
             cur.execute("PRAGMA foreign_keys=ON")
             cur.execute("PRAGMA journal_mode=WAL")
             cur.execute("PRAGMA busy_timeout=30000")
             cur.close()
+
+        @event.listens_for(engine, "begin")
+        def _sqlite_begin(conn):
+            conn.exec_driver_sql("BEGIN")
 
         return engine
     return create_engine(url, pool_pre_ping=True)
@@ -49,7 +59,7 @@ def get_engine() -> Engine:
     return _engine
 
 
-_APPEND_ONLY_TRIGGERS = {
+APPEND_ONLY_TRIGGERS = {
     "sqlite": [
         """CREATE TRIGGER IF NOT EXISTS approval_no_update BEFORE UPDATE ON approval_records
            BEGIN SELECT RAISE(ABORT, 'approval_records is append-only'); END""",
@@ -66,13 +76,46 @@ _APPEND_ONLY_TRIGGERS = {
 }
 
 
+MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
+BASELINE_REVISION = "0001"
+
+
+def _alembic_config(connection):
+    from alembic.config import Config
+
+    cfg = Config()
+    cfg.set_main_option("script_location", str(MIGRATIONS_DIR))
+    cfg.attributes["connection"] = connection
+    return cfg
+
+
 def create_schema(engine: Engine | None = None) -> None:
-    """Tabloları oluşturur ve onay kayıtlarını DB seviyesinde değiştirilemez yapar."""
+    """Şemayı en güncel sürüme getirir (Alembic göçleri). Veriler korunur.
+
+    FAZ 1'de göç aracı olmadan oluşturulmuş veritabanları temel sürüm olarak işaretlenip yükseltilir.
+    """
+    from alembic import command
+
     engine = engine or get_engine()
-    Base.metadata.create_all(engine)
+    logging.getLogger("alembic").setLevel(logging.WARNING)
     with engine.begin() as conn:
-        for stmt in _APPEND_ONLY_TRIGGERS.get(engine.dialect.name, []):
-            conn.execute(text(stmt))
+        tables = set(inspect(conn).get_table_names())
+        cfg = _alembic_config(conn)
+        versioned = "alembic_version" in tables and conn.execute(
+            text("SELECT count(*) FROM alembic_version")).scalar()
+        if "stores" in tables and not versioned:
+            command.stamp(cfg, BASELINE_REVISION)
+            log.info("Göç aracından önceki veritabanı temel sürüm (%s) olarak işaretlendi", BASELINE_REVISION)
+        before = MigrationContext.configure(conn).get_current_revision()
+        command.upgrade(cfg, "head")
+        after = MigrationContext.configure(conn).get_current_revision()
+        if before != after:
+            log.info("Veritabanı şeması yükseltildi: %s -> %s", before or "boş", after)
+
+
+def current_revision(engine: Engine | None = None) -> str | None:
+    with (engine or get_engine()).connect() as conn:
+        return MigrationContext.configure(conn).get_current_revision()
 
 
 @contextmanager
