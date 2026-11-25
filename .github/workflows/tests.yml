@@ -27,11 +27,18 @@ jobs:
       - name: Testler
         run: python -m pytest
       - name: Komut satırı duman testi
+        # bash: ilk hatada durur (PowerShell yalnızca son komutun sonucuna bakıyordu ve hatayı gizledi)
+        shell: bash
         run: |
           python -m sepetfy init-db
           python -m sepetfy check
           python -m sepetfy feeds
           python -m sepetfy feed-import hepsiburada tests/fixtures/google_shopping.xml
+          python -m sepetfy sources
+          python -m sepetfy costs
+          # Çıktı yönlendirildiğinde (Windows'ta cp1252) Türkçe karakterler çökertmemeli
+          python -m sepetfy feeds > feeds_out.txt
+          grep -q "kapalı" feeds_out.txt
 
   postgres:
     name: ubuntu / PostgreSQL 16

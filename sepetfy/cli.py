@@ -212,7 +212,17 @@ def _cmd_run(settings) -> int:
     return 0
 
 
+def ensure_utf8_output(streams=None) -> None:
+    """Windows'ta çıktı yönlendirildiğinde (dosya, zamanlanmış görev) eski kod sayfası (cp1252)
+    kullanılır ve Türkçe karakterlerde UnicodeEncodeError oluşur. Bu durumda UTF-8'e geç."""
+    for stream in streams if streams is not None else (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if enc != "utf8" and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    ensure_utf8_output()
     parser = argparse.ArgumentParser(prog="sepetfy", description="Sepetfy otomasyon sistemi")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("init-db")

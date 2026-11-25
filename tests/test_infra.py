@@ -143,3 +143,22 @@ def test_seed_is_idempotent_and_disabled(settings):
         stores = s.scalars(select(Store)).all()
         assert len(stores) == first
         assert not any(st.enabled for st in stores)  # doğrulanmadan hiçbir kaynak açık değil
+
+
+# ---------------------------------------------------------------- Windows konsol kodlaması
+def test_cli_output_survives_legacy_windows_codepage():
+    """Windows'ta yönlendirilmiş çıktı cp1252 olur; Türkçe karakter UnicodeEncodeError vermemeli."""
+    import io
+
+    from sepetfy.cli import ensure_utf8_output
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    with pytest.raises(UnicodeEncodeError):
+        stream.write("kapalı ş ğ")
+        stream.flush()
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    ensure_utf8_output([stream])
+    stream.write("kapalı ş ğ ✅")
+    stream.flush()
+    assert stream.buffer.getvalue().decode("utf-8") == "kapalı ş ğ ✅"
