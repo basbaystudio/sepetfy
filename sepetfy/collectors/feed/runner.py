@@ -9,7 +9,7 @@ veritabanına hiçbir şey yazılmaz; son sağlam veri geçerli kalır ve hata k
 from __future__ import annotations
 
 import logging
-import shutil
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -134,7 +134,7 @@ def run_feed(session: Session, cfg: FeedConfig, data_dir: Path, *,
     report = _process_with_savepoint(session, cfg, store, state, result.path, now)
     if report.status == "synced":
         state.etag, state.last_modified, state.content_hash = result.etag, result.last_modified, result.sha256
-        shutil.move(result.path, work_dir / f"{cfg.name}.last_good.xml")
+        os.replace(result.path, work_dir / f"{cfg.name}.last_good.xml")  # Windows'ta da üzerine yazar
     else:
         result.path.unlink(missing_ok=True)
     return report

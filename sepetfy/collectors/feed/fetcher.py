@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
-import shutil
+import os
 import tempfile
 import zipfile
 from dataclasses import dataclass
@@ -66,31 +66,36 @@ def fetch_feed(
     tmp = Path(tmp_name)
     digest = hashlib.sha256()
     size = 0
+    not_modified = False
     try:
         with open(fd, "wb") as out:
             try:
                 with client.stream("GET", url, headers=headers, timeout=timeout_sec,
                                    follow_redirects=True) as resp:
                     if resp.status_code == 304:
-                        tmp.unlink(missing_ok=True)
-                        return FetchResult(NOT_MODIFIED, etag=etag, last_modified=last_modified,
-                                           sha256=previous_hash)
-                    if resp.status_code == 429 or resp.status_code >= 500:
+                        # Dosya burada hâlâ açık: silme işlemi with bloğundan sonra (Windows açık dosyayı silemez)
+                        not_modified = True
+                    elif resp.status_code == 429 or resp.status_code >= 500:
                         raise ExternalServiceError(_service(name), f"HTTP {resp.status_code}", retryable=True)
-                    if resp.status_code >= 400:
+                    elif resp.status_code >= 400:
                         raise ExternalServiceError(_service(name), f"HTTP {resp.status_code}", retryable=False)
-                    for chunk in resp.iter_bytes(1 << 16):
-                        size += len(chunk)
-                        if size > max_bytes:
-                            raise ExternalServiceError(_service(name), f"boyut sınırı aşıldı (> {max_bytes} bayt)",
-                                                       retryable=False)
-                        digest.update(chunk)
-                        out.write(chunk)
-                    new_etag = resp.headers.get("ETag")
-                    new_lm = resp.headers.get("Last-Modified")
+                    if not not_modified:
+                        for chunk in resp.iter_bytes(1 << 16):
+                            size += len(chunk)
+                            if size > max_bytes:
+                                raise ExternalServiceError(_service(name), f"boyut sınırı aşıldı (> {max_bytes} bayt)",
+                                                           retryable=False)
+                            digest.update(chunk)
+                            out.write(chunk)
+                        new_etag = resp.headers.get("ETag")
+                        new_lm = resp.headers.get("Last-Modified")
             except httpx.HTTPError as exc:
                 # httpx mesajları URL (token) içerebilir; yalnızca hata türünü aktar
                 raise ExternalServiceError(_service(name), type(exc).__name__, retryable=True) from None
+
+        if not_modified:
+            tmp.unlink(missing_ok=True)
+            return FetchResult(NOT_MODIFIED, etag=etag, last_modified=last_modified, sha256=previous_hash)
 
         sha = digest.hexdigest()
         if previous_hash and sha == previous_hash:
@@ -120,7 +125,7 @@ def _decompress(src: Path, dest: Path, max_bytes: int) -> Path:
                 _copy_limited(f_in, f_out, max_bytes * 10)
         src.unlink()
     else:
-        shutil.move(src, dest)
+        os.replace(src, dest)
     return dest
 
 

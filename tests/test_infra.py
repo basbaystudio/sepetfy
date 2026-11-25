@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import logging
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -26,7 +27,7 @@ def test_settings_parsing(tmp_path, monkeypatch):
     s = Settings(_env_file=env)
     assert s.admin_user_ids == frozenset({1, 22, 333})
     assert s.anthropic_api_key is None  # boş değer = yapılandırılmamış
-    assert s.database_url.startswith("sqlite:////")  # mutlak yola çevrildi
+    assert Path(s.database_url.removeprefix("sqlite:///")).is_absolute()  # mutlak yola çevrildi (Windows'ta C:\\...)
     assert s.monthly_budget_usd == 25
     assert s.publishing_enabled is False and s.dry_run is True  # güvenli varsayılanlar
 

@@ -5,6 +5,8 @@ uzaktan kontrol ve uyarılar. Takipçilere yayın yapılacak Sepetfy kanalı ayr
 
 ## Kurulum (yaklaşık 5 dakika)
 
+Windows'ta adım adım PowerShell komutları: [WINDOWS.md](WINDOWS.md)
+
 ### 1. Botu oluşturun
 1. Telegram'da **@BotFather**'ı açın (mavi onay işaretli resmî hesap).
 2. `/newbot` yazın.

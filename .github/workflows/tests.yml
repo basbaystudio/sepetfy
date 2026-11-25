@@ -1,0 +1,61 @@
+name: Testler
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Bağımlılıkları kur
+        run: python -m pip install -e ".[dev]"
+      - name: Testler
+        run: python -m pytest
+      - name: Komut satırı duman testi
+        run: |
+          python -m sepetfy init-db
+          python -m sepetfy check
+          python -m sepetfy feeds
+          python -m sepetfy feed-import hepsiburada tests/fixtures/google_shopping.xml
+
+  postgres:
+    name: ubuntu / PostgreSQL 16
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: sepetfy_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SEPETFY_TEST_DB_URL: postgresql+psycopg://postgres:test@localhost:5432/sepetfy_test
+      SEPETFY_TEST_PG_URL: postgresql+psycopg://postgres:test@localhost:5432/sepetfy_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: PostgreSQL istemcisi (pg_dump yedek testi için)
+        run: sudo apt-get update -q && sudo apt-get install -y -q postgresql-client
+      - name: Bağımlılıkları kur
+        run: python -m pip install -e ".[dev,postgres]"
+      - name: Testler (PostgreSQL)
+        run: python -m pytest

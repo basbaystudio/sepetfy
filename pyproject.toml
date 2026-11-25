@@ -15,6 +15,8 @@ dependencies = [
     "httpx>=0.27,<1",
     "defusedxml>=0.7",
     "alembic>=1.13,<2",
+    # Windows'ta yerleşik saat dilimi veritabanı yok (Europe/Istanbul için gerekli)
+    "tzdata; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]

@@ -26,7 +26,7 @@ cp .env.example .env
 .venv/bin/python -m pytest
 ```
 
-Docker / VPS: [docs/SETUP.md](docs/SETUP.md)
+Windows'ta deneme kurulumu: [docs/WINDOWS.md](docs/WINDOWS.md) · Docker / VPS: [docs/SETUP.md](docs/SETUP.md)
 
 ## Dokümanlar
 
